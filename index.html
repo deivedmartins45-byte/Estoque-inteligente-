@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f4e79">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Estoque">
+<title>Estoque Inteligente</title>
+<style>
+  :root{--pri:#1f4e79;--pri2:#2e75b6;--ok:#2e7d32;--warn:#e69500;--bad:#c62828;--bg:#f3f6fa;--card:#fff;--txt:#1c2733;--mut:#6b7a8c;--line:#e2e8f0}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1a2430;--txt:#e8eef5;--mut:#9aa8b8;--line:#2a3746}}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;font-size:16px}
+  button,input,select,textarea{font:inherit;color:inherit}
+  .hidden{display:none!important}
+  header{background:var(--pri);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+  header h1{font-size:18px}
+  header small{opacity:.85;font-size:12px;display:block}
+  header button{background:rgba(255,255,255,.15);border:0;color:#fff;padding:8px 12px;border-radius:10px;font-size:14px;cursor:pointer}
+  main{padding:14px 14px 96px;max-width:720px;margin:0 auto}
+  nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:5}
+  nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut);padding:6px 4px;cursor:pointer;min-width:56px}
+  nav button .ic{font-size:22px}
+  nav button.on{color:var(--pri2);font-weight:600}
+  h2{font-size:20px;margin:6px 0 12px}
+  h3{font-size:16px;margin:16px 0 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .kpi b{display:block;font-size:24px;margin-top:4px}
+  .kpi span{font-size:13px;color:var(--mut)}
+  .kpi.ok b{color:var(--ok)} .kpi.warn b{color:var(--warn)} .kpi.bad b{color:var(--bad)}
+  .alert{border-left:4px solid var(--warn);background:var(--card);padding:12px;border-radius:10px;margin-bottom:8px;font-size:15px}
+  .alert.bad{border-color:var(--bad)} .alert.info{border-color:var(--pri2)}
+  .btn{display:block;width:100%;background:var(--pri2);color:#fff;border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:600;cursor:pointer;margin-top:8px}
+  .btn.sec{background:transparent;color:var(--pri2);border:2px solid var(--pri2)}
+  .btn.bad{background:var(--bad)}
+  .btn.small{display:inline-block;width:auto;padding:8px 12px;font-size:13px;margin:4px 0 0 6px}
+  .btn:disabled{opacity:.5}
+  .btn:active{transform:scale(.98)}
+  label{display:block;font-size:14px;color:var(--mut);margin:12px 0 6px}
+  input,select,textarea{width:100%;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:17px}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .sub{font-size:13px;color:var(--mut)}
+  .item.off span,.item.off b{text-decoration:line-through;color:var(--mut)}
+  .tag{font-size:12px;padding:3px 8px;border-radius:99px;white-space:nowrap}
+  .tag.ok{background:#e6f4ea;color:var(--ok)} .tag.warn{background:#fff4df;color:#9a6200} .tag.bad{background:#fdecec;color:var(--bad)}
+  .bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--pri2)}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:140px;padding-top:18px}
+  .chart div{flex:1;background:var(--pri2);border-radius:6px 6px 0 0;min-height:2px;position:relative}
+  .chart div span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:var(--mut)}
+  .chart div em{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:11px;font-style:normal}
+  .muted{color:var(--mut);font-size:14px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .seg button{padding:10px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:14px}
+  .seg button.on{background:var(--pri2);color:#fff;border-color:var(--pri2)}
+  .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login .card{width:100%;max-width:420px}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#263238;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;max-width:90%;text-align:center}
+  .toast.show{opacity:1}
+  .empty{text-align:center;color:var(--mut);padding:24px 8px}
+  .aviso{background:#fff4df;color:#6b4500;border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px}
+  details summary{cursor:pointer;font-weight:600;padding:6px 0}
+</style>
+</head>
+<body>
+
+<!-- Configuração do Firebase ainda não preenchida -->
+<section id="scr-cfg" class="login hidden">
+  <div class="card">
+    <h2>Falta configurar o Firebase</h2>
+    <p class="muted">Siga o arquivo LEIA-ME.md, passo 2. Depois cole os dados do seu projeto no topo do arquivo index.html, onde está escrito COLE_AQUI.</p>
+  </div>
+</section>
+
+<!-- Entrar / criar conta / esqueci a senha -->
+<section id="scr-auth" class="login hidden">
+  <div class="card">
+    <h2>Estoque Inteligente</h2>
+    <div id="authEntrar">
+      <label>E-mail</label><input id="aEmail" type="email" autocomplete="username" inputmode="email">
+      <label>Senha</label><input id="aSenha" type="password" autocomplete="current-password">
+      <button class="btn" id="btnEntrar">Entrar</button>
+      <button class="btn sec" id="btnEsqueci">Esqueci a senha</button>
+      <button class="btn sec" id="btnIrCriar">Criar conta do proprietário</button>
+    </div>
+    <div id="authCriar" class="hidden">
+      <p class="muted">Crie a conta de quem é o dono do estabelecimento. Os funcionários são cadastrados depois, pelo proprietário.</p>
+      <label>E-mail</label><input id="cEmail" type="email" autocomplete="username" inputmode="email">
+      <label>Senha (mínimo 6 caracteres)</label><input id="cSenha" type="password" autocomplete="new-password">
+      <button class="btn" id="btnCriar">Criar conta</button>
+      <button class="btn sec" id="btnVoltarEntrar">Voltar</button>
+    </div>
+    <p class="aviso hidden" id="msgAuth"></p>
+  </div>
+</section>
+
+<!-- Primeiro acesso do proprietário: cria o estabelecimento -->
+<section id="scr-setup" class="login hidden">
+  <div class="card">
+    <h2>Seu estabelecimento</h2>
+    <p class="muted">Conectado como <b id="sEmail"></b>. Preencha para começar.</p>
+    <label>Nome do estabelecimento</label><input id="sNome" placeholder="Ex.: Padaria Pão Quente">
+    <label>Seu nome</label><input id="sDono" placeholder="Ex.: Maria">
+    <button class="btn" id="btnSetup">Criar estabelecimento</button>
+    <button class="btn sec" id="btnSairSetup">Sair</button>
+  </div>
+</section>
+
+<!-- Aplicativo -->
+<div id="scr-app" class="hidden">
+  <header>
+    <div><h1 id="hNome">Estoque</h1><small id="hUser"></small></div>
+    <button id="btnSair">Sair</button>
+  </header>
+  <main>
+
+    <!-- PAINEL -->
+    <section id="tab-painel">
+      <h2>Painel</h2>
+      <div class="grid" id="kpis"></div>
+      <h3>Atenção</h3>
+      <div id="alertas"></div>
+      <h3>Hoje</h3>
+      <div class="grid">
+        <div class="kpi"><span>Entradas hoje</span><b id="kEnt">0</b></div>
+        <div class="kpi"><span>Saídas hoje</span><b id="kSai">0</b></div>
+        <div class="kpi bad"><span>Desperdícios hoje</span><b id="kDes">0</b></div>
+        <div class="kpi owner"><span>Valor do estoque</span><b id="kVal" style="font-size:19px">—</b></div>
+      </div>
+    </section>
+
+    <!-- MOVIMENTAR -->
+    <section id="tab-mov" class="hidden">
+      <h2>Registrar movimentação</h2>
+      <div class="seg" id="movTipos"></div>
+      <div class="card" style="margin-top:12px">
+        <label>Produto</label>
+        <select id="mProd"></select>
+        <div class="row">
+          <div><label>Quantidade</label><input id="mQtd" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+          <div><label>Unidade</label><select id="mUnidade"></select></div>
+        </div>
+        <div class="row">
+          <div><label>Data</label><input id="mData" type="date"></div>
+          <div id="mValorBox"><label>Valor da compra (R$)</label><input id="mValor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+        </div>
+        <div id="mFornBox"><label>Fornecedor (opcional)</label><input id="mForn" placeholder="Ex.: Moinho Central"></div>
+        <label>Observação (opcional)</label>
+        <input id="mObs" placeholder="Ex.: pão queimou">
+        <button class="btn" id="btnSalvarMov">Salvar</button>
+      </div>
+      <p class="muted">O saldo é calculado sozinho. Você só registra o que entrou ou saiu. Não é possível tirar mais do que existe no estoque.</p>
+    </section>
+
+    <!-- PRODUTOS -->
+    <section id="tab-prod" class="hidden">
+      <h2>Produtos</h2>
+      <div class="card" id="prodLista"></div>
+      <div class="card" id="prodArquivados"></div>
+      <div class="card" id="formProd">
+        <h3 style="margin-top:0">Novo produto</h3>
+        <label>Nome</label><input id="pNome" placeholder="Ex.: Farinha de trigo">
+        <div class="row">
+          <div><label>Categoria</label><input id="pCat" placeholder="Ex.: Secos"></div>
+          <div><label>Unidade</label><select id="pUnidade"></select></div>
+        </div>
+        <div class="row">
+          <div><label>Estoque inicial</label><input id="pInic" type="number" step="any" min="0" placeholder="0"></div>
+          <div><label>Estoque mínimo</label><input id="pMin" type="number" step="any" min="0" placeholder="0"></div>
+        </div>
+        <div class="row">
+          <div><label>Custo por unidade (R$)</label><input id="pCusto" type="number" step="0.01" min="0" placeholder="0,00"></div>
+          <div><label>Alerta de desperdício (%)</label><input id="pLim" type="number" step="1" min="0" max="100" value="10"></div>
+        </div>
+        <p class="muted">A unidade não pode ser trocada depois de cadastrar, para não misturar o histórico.</p>
+        <button class="btn" id="btnCriarProd">Cadastrar produto</button>
+      </div>
+    </section>
+
+    <!-- RELATÓRIOS (somente dono) -->
+    <section id="tab-rel" class="hidden">
+      <h2>Relatórios</h2>
+      <div class="seg" id="relPeriodo"></div>
+      <div class="grid" style="margin-top:12px" id="relCards"></div>
+      <div class="card"><h3 style="margin-top:0">Saídas por dia (quantidade de registros)</h3><div class="chart" id="relGrafico"></div></div>
+      <div class="card"><h3 style="margin-top:0">Por produto</h3><div id="relProd"></div></div>
+      <div class="card"><h3 style="margin-top:0">Precisam de reposição agora</h3><div id="relRepo"></div></div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="tab-hist" class="hidden">
+      <h2>Histórico</h2>
+      <p class="muted" style="margin-bottom:8px">Últimas 300 movimentações. Nada é apagado: erros são cancelados pelo proprietário e continuam visíveis.</p>
+      <div class="card" id="histLista"></div>
+    </section>
+
+    <!-- EQUIPE E DADOS (somente dono) -->
+    <section id="tab-equipe" class="hidden">
+      <h2>Equipe e dados</h2>
+      <div class="card" id="equipeLista"></div>
+      <div class="card">
+        <h3 style="margin-top:0">Novo funcionário</h3>
+        <label>Nome</label><input id="fNome" placeholder="Ex.: João">
+        <label>E-mail que ele usará para entrar</label><input id="fEmail" type="email" inputmode="email">
+        <label>Senha provisória (mínimo 6 caracteres)</label><input id="fSenha" type="password">
+        <p class="muted">Passe essa senha para o funcionário. Ele pode trocá-la depois com "Esqueci a senha".</p>
+        <button class="btn" id="btnAddFunc">Adicionar funcionário</button>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Dados</h3>
+        <label>Nome do estabelecimento</label><input id="cfgNome">
+        <button class="btn sec" id="btnSalvarNome">Salvar nome</button>
+        <button class="btn sec" id="btnBackup">Baixar cópia de segurança (arquivo)</button>
+        <button class="btn sec" id="btnRecalc">Recalcular saldos pelo histórico</button>
+        <div id="boxV1"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav id="nav"></nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (SDK oficial, versão fixa) e lógica de cálculo -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/*
+ * Estoque Inteligente v2 - lógica de cálculo (sem Firebase, sem tela).
+ * Fica separada para ser testada com `node --test`.
+ *
+ * Regras principais:
+ * - Saldo = soma das entradas e do estoque inicial - soma das saídas. Nunca fica negativo.
+ * - Custo médio ponderado: a cada entrada com valor, o custo médio é recalculado.
+ * - Cada saída guarda o custo do momento, então o prejuízo do desperdício não muda depois.
+ * - Movimentações canceladas não entram em nenhum cálculo.
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.Calc = api;
+})(typeof self !== 'undefined' ? self : globalThis, function () {
+  'use strict';
+
+  const EPS = 1e-9;
+  const DESPERDICIO = 'Desperdício / descarte';
+  const SAIDAS = ['Usado na produção', 'Vendido', 'Outro setor', DESPERDICIO];
+
+  // f = fator para a unidade-base do grupo (g, ml, unidade, pacote). Só converte dentro do grupo.
+  const UNIDADES = {
+    kg: { f: 1000, grupo: 'massa' }, g: { f: 1, grupo: 'massa' },
+    l: { f: 1000, grupo: 'volume' }, ml: { f: 1, grupo: 'volume' },
+    unidades: { f: 1, grupo: 'contagem' }, pacotes: { f: 1, grupo: 'pacote' }
+  };
+
+  const r1 = x => Math.round((x + Number.EPSILON) * 10) / 10;
+  const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+  const r3 = x => Math.round((x + Number.EPSILON) * 1000) / 1000;
+  const r4 = x => Math.round((x + Number.EPSILON) * 10000) / 10000;
+  const soma = a => a.reduce((s, x) => s + (Number(x) || 0), 0);
+
+  function converter(qtd, de, para) {
+    if (de === para) return qtd;
+    const a = UNIDADES[de], b = UNIDADES[para];
+    if (!a || !b || a.grupo !== b.grupo) return null;
+    return qtd * a.f / b.f;
+  }
+
+  function unidadesDoGrupo(unidade) {
+    const g = UNIDADES[unidade] && UNIDADES[unidade].grupo;
+    return Object.keys(UNIDADES).filter(u => UNIDADES[u].grupo === g);
+  }
+
+  function dataValida(s) {
+    if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    const d = new Date(s + 'T00:00:00Z');
+    return !isNaN(d) && d.toISOString().slice(0, 10) === s;
+  }
+
+  function hojeDe(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function addDias(s, n) {
+    const [y, m, d] = s.split('-').map(Number);
+    return hojeDe(new Date(y, m - 1, d + n, 12));
+  }
+
+  // Custo médio ponderado após uma entrada
+  function novoCustoMedio(saldo, custo, qtd, custoEntrada) {
+    if (saldo <= EPS) return r4(custoEntrada);
+    return r4((saldo * custo + qtd * custoEntrada) / (saldo + qtd));
+  }
+
+  /*
+   * Valida uma movimentação antes de salvar.
+   * Retorna { ok:false, erro } ou { ok:true, mov, novoSaldo, novoCusto }.
+   * `p` é o produto com saldo e custoMedio atuais.
+   */
+  function prepararMovimento(e, p, hoje) {
+    const erro = msg => ({ ok: false, erro: msg });
+    if (!p) return erro('Produto não encontrado.');
+    if (p.arquivado) return erro('Este produto está arquivado. Restaure-o para registrar movimentações.');
+    if (e.tipo !== 'entrada' && e.tipo !== 'saida') return erro('Escolha entrada ou saída.');
+    if (e.tipo === 'saida' && !SAIDAS.includes(e.sub)) return erro('Escolha o motivo da saída.');
+
+    const q = Number(e.qtd);
+    if (!Number.isFinite(q) || q <= 0) return erro('Digite uma quantidade maior que zero.');
+    if (q > 1e7) return erro('Quantidade muito alta. Confira o número.');
+
+    const qp = converter(q, e.unidade, p.unidade);
+    if (qp === null) return erro(`A unidade "${e.unidade}" não combina com "${p.unidade}", que é a unidade de ${p.nome}.`);
+    const qtd = r3(qp);
+    if (qtd <= 0) return erro('Quantidade pequena demais. Use uma unidade menor, como g em vez de kg.');
+
+    if (!dataValida(e.data)) return erro('Data inválida.');
+    if (hoje && e.data > hoje) return erro('A data não pode ser depois de hoje.');
+
+    const vt = Number(e.valorTotal) || 0;
+    if (!Number.isFinite(vt) || vt < 0) return erro('Valor da compra inválido.');
+
+    const saldo = Number(p.saldo) || 0;
+    if (e.tipo === 'saida' && qtd > saldo + EPS) {
+      return erro(`Saldo insuficiente. Restam ${r3(saldo)} ${p.unidade} de ${p.nome}.`);
+    }
+
+    const custoAtual = Number(p.custoMedio) || 0;
+    let custoUnit = custoAtual, valor;
+    if (e.tipo === 'entrada' && vt > 0) {
+      custoUnit = r4(vt / qtd);
+      valor = r2(vt);
+    } else {
+      valor = r2(qtd * custoUnit);
+    }
+
+    const ehEntrada = e.tipo === 'entrada';
+    return {
+      ok: true,
+      mov: {
+        tipo: e.tipo,
+        sub: ehEntrada ? 'Entrada' : e.sub,
+        qtd, data: e.data, custoUnit, valor,
+        fornecedor: String(e.fornecedor || '').trim(),
+        obs: String(e.obs || '').trim()
+      },
+      novoSaldo: r3(ehEntrada ? saldo + qtd : saldo - qtd),
+      novoCusto: ehEntrada ? novoCustoMedio(saldo, custoAtual, qtd, custoUnit) : custoAtual
+    };
+  }
+
+  /*
+   * Recalcula saldo e custo médio do zero a partir do histórico.
+   * Usa a ordem de registro (criadoEm), a mesma do cálculo incremental, para que os dois batam.
+   */
+  function replay(p, movs) {
+    const ms = movs
+      .filter(m => !m.cancelado && m.produtoId === p.id)
+      .sort((a, b) => (a.criadoEm || 0) - (b.criadoEm || 0));
+    let saldo = 0, custo = 0;
+    for (const m of ms) {
+      if (m.tipo === 'entrada' || m.tipo === 'inicial') {
+        custo = novoCustoMedio(saldo, custo, m.qtd, m.custoUnit);
+        saldo = r3(saldo + m.qtd);
+      } else {
+        saldo = r3(saldo - m.qtd);
+      }
+    }
+    return { saldo, custoMedio: custo, negativo: saldo < -EPS, total: ms.length };
+  }
+
+  function statusDe(saldo, minimo) {
+    if (saldo <= EPS) return 'zerado';
+    if (saldo <= (Number(minimo) || 0) + EPS) return 'repor';
+    return 'ok';
+  }
+
+  // Visão atual de todos os produtos ativos (não arquivados)
+  function resumo(produtos, movs, hoje) {
+    const ativos = produtos.filter(p => !p.arquivado);
+    const ini30 = addDias(hoje, -29);
+    const linhas = ativos.map(p => {
+      const r = replay(p, movs);
+      const saidas30 = movs.filter(m => !m.cancelado && m.produtoId === p.id && m.tipo === 'saida' && m.data >= ini30 && m.data <= hoje);
+      const q30 = soma(saidas30.map(m => m.qtd));
+      const w30 = soma(saidas30.filter(m => m.sub === DESPERDICIO).map(m => m.qtd));
+      return {
+        produto: p,
+        saldo: r.saldo,
+        custoMedio: r.custoMedio,
+        negativo: r.negativo,
+        status: statusDe(r.saldo, p.minimo),
+        valorEstoque: r2(Math.max(r.saldo, 0) * r.custoMedio),
+        pctDesperdicio30: q30 > EPS ? r1(w30 / q30 * 100) : null
+      };
+    });
+    const totais = {
+      itens: ativos.length,
+      comEstoque: linhas.filter(l => l.saldo > EPS).length,
+      baixo: linhas.filter(l => l.status === 'repor').length,
+      zerados: linhas.filter(l => l.status === 'zerado').length,
+      repor: linhas.filter(l => l.status !== 'ok').length,
+      valorEstoque: r2(soma(linhas.map(l => l.valorEstoque)))
+    };
+    return { linhas, totais };
+  }
+
+  function alertas(linhas, limitePadrao) {
+    const padrao = limitePadrao == null ? 10 : limitePadrao;
+    const out = [];
+    for (const l of linhas) {
+      const n = l.produto.nome;
+      if (l.negativo) out.push({ nivel: 'bad', texto: `${n}: saldo negativo. Confira os lançamentos.` });
+      else if (l.status === 'zerado') out.push({ nivel: 'bad', texto: `${n}: estoque zerado.` });
+      else if (l.status === 'repor') out.push({ nivel: 'warn', texto: `${n}: estoque baixo. Restam ${r3(l.saldo)} ${l.produto.unidade}.` });
+      const lim = Number(l.produto.limiteDesperdicio ?? padrao);
+      if (l.pctDesperdicio30 !== null && l.pctDesperdicio30 > lim) {
+        out.push({ nivel: 'info', texto: `${n}: desperdício de ${l.pctDesperdicio30}% nos últimos 30 dias (limite ${lim}%).` });
+      }
+    }
+    return out;
+  }
+
+  /*
+   * Números de um período (de..ate, inclusive). Separa quantidade desperdiçada
+   * de prejuízo financeiro estimado (custo dos produtos jogados fora).
+   */
+  function periodo(produtos, movs, de, ate) {
+    const ms = movs.filter(m => !m.cancelado && m.data >= de && m.data <= ate);
+    const saidas = ms.filter(m => m.tipo === 'saida');
+    const ehDesp = m => m.sub === DESPERDICIO;
+
+    const porProduto = produtos.map(p => {
+      const mp = ms.filter(m => m.produtoId === p.id);
+      const sd = mp.filter(m => m.tipo === 'saida');
+      const qSaida = soma(sd.map(m => m.qtd));
+      const qDesp = soma(sd.filter(ehDesp).map(m => m.qtd));
+      return {
+        produto: p,
+        comprado: r2(soma(mp.filter(m => m.tipo === 'entrada').map(m => m.valor))),
+        qtdConsumida: r3(soma(sd.filter(m => !ehDesp(m)).map(m => m.qtd))),
+        valorConsumido: r2(soma(sd.filter(m => !ehDesp(m)).map(m => m.valor))),
+        qtdDesperdicio: r3(qDesp),
+        valorDesperdicio: r2(soma(sd.filter(ehDesp).map(m => m.valor))),
+        pctDesperdicio: qSaida > EPS ? r1(qDesp / qSaida * 100) : null
+      };
+    }).filter(x => x.comprado > 0 || x.qtdConsumida > 0 || x.qtdDesperdicio > 0)
+      .sort((a, b) => b.valorDesperdicio - a.valorDesperdicio || b.qtdDesperdicio - a.qtdDesperdicio);
+
+    return {
+      comprado: r2(soma(ms.filter(m => m.tipo === 'entrada').map(m => m.valor))),
+      consumido: r2(soma(saidas.filter(m => !ehDesp(m)).map(m => m.valor))),
+      desperdicio: r2(soma(saidas.filter(ehDesp).map(m => m.valor))),
+      porProduto,
+      totalMovs: ms.length
+    };
+  }
+
+  /*
+   * Converte o JSON do aplicativo antigo (v1, localStorage) para movimentações da v2.
+   * Não grava nada: devolve os produtos com saldo e custo finais, e as movimentações.
+   */
+  function converterV1(v1, hoje) {
+    const prods = (v1 && v1.products) || [];
+    const movsV1 = ((v1 && v1.moves) || []).slice()
+      .sort((a, b) => (a.at || 0) - (b.at || 0));
+    const produtos = [], movimentos = [], ignorados = [];
+    const estado = {};
+
+    const aplicar = (pv1, m) => {
+      const e = estado[pv1.id];
+      if (m.tipo === 'entrada' || m.tipo === 'inicial') {
+        e.custo = novoCustoMedio(e.saldo, e.custo, m.qtd, m.custoUnit);
+        e.saldo = r3(e.saldo + m.qtd);
+      } else {
+        e.saldo = r3(e.saldo - m.qtd);
+      }
+      movimentos.push(Object.assign({}, m, { produtoV1: pv1.id, criadoEm: movimentos.length + 1 }));
+    };
+
+    for (const p of prods) {
+      const nome = String(p.name || '').trim();
+      if (!nome || !UNIDADES[p.unit]) { ignorados.push({ tipo: 'produto', nome: p.name || '(sem nome)' }); continue; }
+      const pv1 = { id: p.id, nome, unidade: p.unit };
+      estado[p.id] = { saldo: 0, custo: 0 };
+      const custoInicial = Number(p.cost) || 0;
+      const ms = movsV1.filter(m => m.pid === p.id);
+      const dataBase = ms.length && dataValida(ms[0].date) ? ms[0].date : hoje;
+      const ini = Number(p.initial) || 0;
+      if (ini > 0) {
+        aplicar(pv1, {
+          tipo: 'inicial', sub: 'Estoque inicial', qtd: r3(ini), data: dataBase,
+          custoUnit: r4(custoInicial), valor: r2(ini * custoInicial),
+          fornecedor: '', obs: 'Importado do aplicativo antigo', usuario: 'Importação'
+        });
+      }
+      for (const m of ms) {
+        const qtd = r3(Number(m.qty));
+        if (!(qtd > 0) || !dataValida(m.date)) { ignorados.push({ tipo: 'movimentação', produto: nome, data: m.date }); continue; }
+        if (m.type === 'entrada') {
+          const vt = Number(m.value) || 0;
+          const custoUnit = vt > 0 ? r4(vt / qtd) : estado[p.id].custo;
+          aplicar(pv1, { tipo: 'entrada', sub: 'Entrada', qtd, data: m.date, custoUnit, valor: vt > 0 ? r2(vt) : r2(qtd * custoUnit), fornecedor: m.supplier || '', obs: m.note || '', usuario: m.user || 'Importação' });
+        } else {
+          const sub = SAIDAS.includes(m.sub) ? m.sub : 'Outro setor';
+          const custoUnit = estado[p.id].custo;
+          aplicar(pv1, { tipo: 'saida', sub, qtd, data: m.date, custoUnit, valor: r2(qtd * custoUnit), fornecedor: '', obs: m.note || '', usuario: m.user || 'Importação' });
+        }
+      }
+      produtos.push({
+        nome, categoria: p.category || '', unidade: p.unit, minimo: Number(p.min) || 0,
+        limiteDesperdicio: Number(p.wasteLimit) || 10, custoMedio: estado[p.id].custo,
+        saldo: estado[p.id].saldo, v1Id: p.id
+      });
+    }
+    for (const m of movsV1) {
+      if (!prods.some(p => p.id === m.pid)) ignorados.push({ tipo: 'movimentação de produto apagado', data: m.date });
+    }
+    return { produtos, movimentos, ignorados };
+  }
+
+  return {
+    UNIDADES, SAIDAS, DESPERDICIO, EPS,
+    converter, unidadesDoGrupo, dataValida, hojeDe, addDias,
+    novoCustoMedio, prepararMovimento, replay, statusDe,
+    resumo, alertas, periodo, converterV1
+  };
+});
+
+</script>
+
+<script>
+/* ==================================================================
+ * CONFIGURAÇÃO: cole aqui os dados do seu projeto Firebase (LEIA-ME, passo 2).
+ * Essas chaves não são segredas. A segurança fica nas regras do Firestore.
+ * ================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCg5TdXpe4tRQihS6JgZXvvbGtTUH0JwLw",
+  authDomain: "padaria--martins2.firebaseapp.com",
+  projectId: "padaria--martins2",
+  storageBucket: "padaria--martins2.firebasestorage.app",
+  messagingSenderId: "797803494453",
+  appId: "1:797803494453:web:92b0657f4bd4ad3ce5457c"
+};
+
+const V1_KEY = "estoque-inteligente-v1";
+const CFG_OK = !String(FIREBASE_CONFIG.apiKey).startsWith("COLE");
+
+/* ---------- utilitários ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hoje = () => Calc.hojeDe(new Date());
+const dinheiro = v => "R$ " + (Number(v) || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const numero = (v, u) => (Math.round((Number(v) || 0) * 1000) / 1000).toLocaleString("pt-BR") + (u ? " " + u : "");
+const dataBR = s => s ? s.split("-").reverse().join("/") : "";
+const lerNum = id => { const v = $(id).value.trim(); return v === "" ? NaN : Number(v.replace(",", ".")); };
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2800);
+}
+function msgErro(e) {
+  const code = (e && e.code) || "";
+  const texto = String((e && e.message) || "");
+  const mapa = {
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/user-not-found": "E-mail ou senha incorretos.",
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+    "auth/email-already-in-use": "Este e-mail já está cadastrado.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos.",
+    "auth/network-request-failed": "Sem conexão com a internet.",
+    "permission-denied": "Você não tem permissão para esta ação.",
+    "unavailable": "Sem conexão com a internet. Nada foi salvo. Tente de novo quando o sinal voltar.",
+    "deadline-exceeded": "A conexão está lenta. Nada foi salvo. Tente de novo."
+  };
+  if (mapa[code]) return mapa[code];
+  if (!code && texto) return texto;            // erro de validação feito por nós
+  return "Não foi possível concluir. Tente novamente.";
+}
+
+/* ---------- Firebase ---------- */
+let fauth = null, fdb = null;
+let S = null;          // sessão atual: {uid, estId, nome, papel, membroNome, produtos, movs, membros, ouvintes}
+let tabAtual = "painel";
+let movTipo = "entrada", movSub = Calc.SAIDAS[0];
+let relDias = 7;
+
+function iniciarFirebase() {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  fauth = firebase.auth();
+  fdb = firebase.firestore();
+  // Mantém uma cópia local para abrir mesmo sem sinal. Gravações ainda exigem internet (ver LEIA-ME).
+  fdb.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  fauth.onAuthStateChanged(carregarSessao);
+}
+
+const colProd = () => fdb.collection(`estabelecimentos/${S.estId}/produtos`);
+const colMov  = () => fdb.collection(`estabelecimentos/${S.estId}/movimentos`);
+const colMem  = () => fdb.collection(`estabelecimentos/${S.estId}/membros`);
+const docEst  = () => fdb.doc(`estabelecimentos/${S.estId}`);
+
+function mostra(nome) {
+  ["cfg", "auth", "setup", "app"].forEach(s => $("scr-" + s).classList.toggle("hidden", s !== nome));
+}
+function avisoAuth(texto) { const a = $("msgAuth"); a.textContent = texto; a.classList.toggle("hidden", !texto); }
+
+async function carregarSessao(user) {
+  pararOuvintes();
+  S = null;
+  if (!user) { mostra("auth"); return; }
+  try {
+    const u = await fdb.collection("usuarios").doc(user.uid).get();
+    if (!u.exists) { $("sEmail").textContent = user.email; mostra("setup"); return; }
+    const estId = u.data().estId;
+    const m = await fdb.doc(`estabelecimentos/${estId}/membros/${user.uid}`).get();
+    if (!m.exists || m.data().ativo !== true) {
+      avisoAuth("Seu acesso foi removido. Fale com o proprietário.");
+      mostra("auth");
+      await fauth.signOut();
+      return;
+    }
+    const est = await fdb.doc(`estabelecimentos/${estId}`).get();
+    S = { uid: user.uid, estId, nome: est.data().nome, papel: m.data().papel, membroNome: m.data().nome,
+          produtos: [], movs: [], membros: [], importadoV1: !!est.data().importadoV1, ouvintes: [] };
+    iniciarOuvintes();
+    mostraApp();
+  } catch (e) {
+    console.error(e);
+    avisoAuth(msgErro(e));
+    mostra("auth");
+  }
+}
+
+function iniciarOuvintes() {
+  const erro = e => { console.error(e); toast(msgErro(e)); };
+  S.ouvintes.push(fdb.doc(`estabelecimentos/${S.estId}`).onSnapshot(d => {
+    if (!d.exists) return;
+    S.nome = d.data().nome; S.importadoV1 = !!d.data().importadoV1;
+    $("hNome").textContent = S.nome; atualizar();
+  }, erro));
+  S.ouvintes.push(colProd().orderBy("nome").onSnapshot(s => {
+    S.produtos = s.docs.map(d => ({ id: d.id, ...d.data() })); atualizar();
+  }, erro));
+  S.ouvintes.push(colMov().orderBy("criadoEm", "desc").limit(3000).onSnapshot(s => {
+    S.movs = s.docs.map(d => ({ id: d.id, ...d.data() })); atualizar();
+  }, erro));
+  S.ouvintes.push(colMem().onSnapshot(s => {
+    S.membros = s.docs.map(d => ({ id: d.id, ...d.data() })); atualizar();
+  }, erro));
+}
+function pararOuvintes() {
+  if (S && S.ouvintes) S.ouvintes.forEach(f => f());
+}
+
+/* ---------- Login ---------- */
+$("btnEntrar").onclick = async () => {
+  avisoAuth("");
+  const email = $("aEmail").value.trim(), senha = $("aSenha").value;
+  if (!email || !senha) return avisoAuth("Digite o e-mail e a senha.");
+  try { await fauth.signInWithEmailAndPassword(email, senha); }
+  catch (e) { avisoAuth(msgErro(e)); }
+};
+$("btnEsqueci").onclick = async () => {
+  const email = $("aEmail").value.trim();
+  if (!email) return avisoAuth("Digite o e-mail para receber o link de troca de senha.");
+  try { await fauth.sendPasswordResetEmail(email); avisoAuth("Se o e-mail estiver cadastrado, você receberá o link para trocar a senha."); }
+  catch (e) { avisoAuth(msgErro(e)); }
+};
+$("btnIrCriar").onclick = () => { $("authEntrar").classList.add("hidden"); $("authCriar").classList.remove("hidden"); avisoAuth(""); };
+$("btnVoltarEntrar").onclick = () => { $("authCriar").classList.add("hidden"); $("authEntrar").classList.remove("hidden"); avisoAuth(""); };
+$("btnCriar").onclick = async () => {
+  avisoAuth("");
+  const email = $("cEmail").value.trim(), senha = $("cSenha").value;
+  if (!email || senha.length < 6) return avisoAuth("Digite um e-mail e uma senha de pelo menos 6 caracteres.");
+  try { await fauth.createUserWithEmailAndPassword(email, senha); }   // onAuthStateChanged mostra o passo seguinte
+  catch (e) { avisoAuth(msgErro(e)); }
+};
+$("btnSair").onclick = () => fauth.signOut();
+$("btnSairSetup").onclick = () => fauth.signOut();
+
+$("btnSetup").onclick = async () => {
+  const nome = $("sNome").value.trim(), dono = $("sDono").value.trim();
+  if (!nome || !dono) return toast("Preencha o nome do estabelecimento e o seu nome.");
+  const u = fauth.currentUser;
+  try {
+    const estRef = fdb.collection("estabelecimentos").doc();
+    // Sequência importa: as regras consultam a membership, então cada passo depende do anterior.
+    await estRef.set({ nome, donoUid: u.uid, criadoEm: Date.now(), importadoV1: false });
+    await estRef.collection("membros").doc(u.uid).set({ nome: dono, email: u.email, papel: "dono", ativo: true, criadoEm: Date.now() });
+    await fdb.collection("usuarios").doc(u.uid).set({ estId: estRef.id, email: u.email, nome: dono });
+    toast("Estabelecimento criado!");
+    await carregarSessao(u);
+  } catch (e) { toast(msgErro(e)); }
+};
+
+/* ---------- Estrutura do app ---------- */
+const ABAS = [
+  { id: "painel", ic: "📊", t: "Painel" },
+  { id: "mov",    ic: "➕", t: "Movimentar" },
+  { id: "prod",   ic: "🥖", t: "Produtos" },
+  { id: "rel",    ic: "📈", t: "Relatórios", dono: true },
+  { id: "hist",   ic: "🕘", t: "Histórico" },
+  { id: "equipe", ic: "👥", t: "Equipe", dono: true }
+];
+const ehDono = () => S && S.papel === "dono";
+
+function mostraApp() {
+  mostra("app");
+  $("hNome").textContent = S.nome;
+  $("hUser").textContent = S.membroNome + " · " + (ehDono() ? "Proprietário" : "Funcionário");
+  const nav = $("nav"); nav.innerHTML = "";
+  ABAS.filter(a => !a.dono || ehDono()).forEach(a => {
+    const b = document.createElement("button");
+    b.dataset.t = a.id; b.innerHTML = `<span class="ic">${a.ic}</span>${a.t}`;
+    b.onclick = () => ir(a.id); nav.appendChild(b);
+  });
+  $("mData").value = hoje();
+  ir("painel");
+}
+function ir(id) {
+  const aba = ABAS.find(a => a.id === id);
+  if (aba && aba.dono && !ehDono()) return toast("Esta área é só para o proprietário.");
+  tabAtual = id;
+  ABAS.forEach(a => $("tab-" + a.id).classList.toggle("hidden", a.id !== id));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.t === id));
+  window.scrollTo(0, 0);
+  atualizar();
+}
+function atualizar() {
+  if (!S) return;
+  const f = { painel: renderPainel, mov: renderMov, prod: renderProd, rel: renderRel, hist: renderHist, equipe: renderEquipe }[tabAtual];
+  if (f) f();
+}
+
+/* ---------- Painel ---------- */
+function renderPainel() {
+  const h = hoje();
+  const R = Calc.resumo(S.produtos, S.movs, h);
+  const t = R.totais;
+  $("kpis").innerHTML = [
+    ["Itens cadastrados", t.itens, ""],
+    ["Com estoque", t.comEstoque, "ok"],
+    ["Estoque baixo", t.baixo, "warn"],
+    ["Precisam repor", t.repor, "bad"]
+  ].map(([a, b, c]) => `<div class="kpi ${c}"><span>${a}</span><b>${b}</b></div>`).join("");
+
+  const deHoje = S.movs.filter(m => !m.cancelado && m.data === h);
+  $("kEnt").textContent = deHoje.filter(m => m.tipo === "entrada").length + " reg.";
+  $("kSai").textContent = deHoje.filter(m => m.tipo === "saida").length + " reg.";
+  $("kDes").textContent = deHoje.filter(m => m.sub === Calc.DESPERDICIO).length + " reg.";
+  // Valor em R$ só para o proprietário
+  $("kVal").parentElement.classList.toggle("hidden", !ehDono());
+  $("kVal").textContent = dinheiro(t.valorEstoque);
+
+  const al = Calc.alertas(R.linhas);
+  $("alertas").innerHTML = al.length
+    ? al.map(a => `<div class="alert ${a.nivel}">${a.nivel === "bad" ? "🚫" : a.nivel === "info" ? "♻️" : "⚠️"} ${esc(a.texto)}</div>`).join("")
+    : '<div class="empty">Nenhum alerta. Tudo certo com o estoque. ✅</div>';
+}
+
+/* ---------- Movimentar ---------- */
+function renderMov() {
+  const tipos = [["entrada", "📥 Entrada"], ["saida", "📤 Saída"]];
+  $("movTipos").innerHTML = tipos.map(([k, t]) => `<button data-k="${k}" class="${movTipo === k ? "on" : ""}">${t}</button>`).join("")
+    + (movTipo === "saida" ? "<div style='width:100%'></div>" + Calc.SAIDAS.map(s => `<button data-s="${esc(s)}" class="${movSub === s ? "on" : ""}">${esc(s)}</button>`).join("") : "");
+  document.querySelectorAll("#movTipos button[data-k]").forEach(b => b.onclick = () => { movTipo = b.dataset.k; renderMov(); });
+  document.querySelectorAll("#movTipos button[data-s]").forEach(b => b.onclick = () => { movSub = b.dataset.s; renderMov(); });
+  $("mValorBox").classList.toggle("hidden", movTipo !== "entrada");
+  $("mFornBox").classList.toggle("hidden", movTipo !== "entrada");
+
+  const atual = $("mProd").value;
+  const ativos = S.produtos.filter(p => !p.arquivado);
+  $("mProd").innerHTML = ativos.length
+    ? ativos.map(p => `<option value="${p.id}">${esc(p.nome)} (${p.unidade})</option>`).join("")
+    : '<option value="">Nenhum produto cadastrado</option>';
+  if (ativos.some(p => p.id === atual)) $("mProd").value = atual;
+  const p = ativos.find(x => x.id === $("mProd").value);
+  $("mUnidade").innerHTML = p ? Calc.unidadesDoGrupo(p.unidade).map(u => `<option ${u === p.unidade ? "selected" : ""}>${u}</option>`).join("") : "";
+  $("btnSalvarMov").disabled = !p;
+}
+$("mProd").addEventListener("change", renderMov);
+
+$("btnSalvarMov").onclick = async () => {
+  const p = S.produtos.find(x => x.id === $("mProd").value);
+  if (!p) return toast("Cadastre um produto antes de registrar.");
+  const entrada = {
+    tipo: movTipo, sub: movSub, qtd: lerNum("mQtd"), unidade: $("mUnidade").value,
+    data: $("mData").value, valorTotal: lerNum("mValor") || 0,
+    fornecedor: $("mForn").value, obs: $("mObs").value
+  };
+  $("btnSalvarMov").disabled = true;
+  try {
+    let saldoFinal;
+    await fdb.runTransaction(async tx => {
+      const pref = colProd().doc(p.id);
+      const snap = await tx.get(pref);
+      if (!snap.exists) throw new Error("Este produto não existe mais.");
+      const atualP = { id: snap.id, ...snap.data() };
+      const prep = Calc.prepararMovimento(entrada, atualP, hoje());
+      if (!prep.ok) throw new Error(prep.erro);
+      const mref = colMov().doc();
+      tx.set(mref, {
+        ...prep.mov, produtoId: p.id, unidade: atualP.unidade,
+        usuario: S.membroNome, usuarioUid: S.uid,
+        criadoEm: Date.now(), cancelado: false
+      });
+      tx.update(pref, { saldo: prep.novoSaldo, custoMedio: prep.novoCusto, atualizadoEm: Date.now() });
+      saldoFinal = prep.novoSaldo;
+    });
+    $("mQtd").value = ""; $("mValor").value = ""; $("mForn").value = ""; $("mObs").value = "";
+    toast(`Salvo. Saldo de ${p.nome}: ${numero(saldoFinal, p.unidade)}`);
+  } catch (e) {
+    toast(msgErro(e));
+  } finally {
+    $("btnSalvarMov").disabled = false;
+  }
+};
+
+/* ---------- Produtos ---------- */
+function renderProd() {
+  const ativos = S.produtos.filter(p => !p.arquivado);
+  const arq = S.produtos.filter(p => p.arquivado);
+  const linhas = Calc.resumo(S.produtos, S.movs, hoje()).linhas;
+  const porId = Object.fromEntries(linhas.map(l => [l.produto.id, l]));
+  $("prodLista").innerHTML = ativos.length ? ativos.map(p => {
+    const l = porId[p.id];
+    const st = l ? l.status : "ok";
+    const tag = { ok: ["ok", "OK"], repor: ["warn", "Repor"], zerado: ["bad", "Zerado"] }[st];
+    const pct = p.minimo > 0 ? Math.min(100, Math.max(0, (l.saldo / (p.minimo * 3)) * 100)) : 100;
+    return `<div class="item"><div style="flex:1"><b>${esc(p.nome)}</b> <span class="tag ${tag[0]}">${tag[1]}</span>
+      <div class="sub">${esc(p.categoria || "Sem categoria")} · mínimo ${numero(p.minimo, p.unidade)}${ehDono() ? " · custo " + dinheiro(p.custoMedio) + "/" + p.unidade : ""}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      ${ehDono() ? `<button class="btn sec small" data-min="${p.id}">Mínimo</button><button class="btn sec small" data-arq="${p.id}">Arquivar</button>` : ""}
+      </div><div style="text-align:right"><b>${numero(l ? l.saldo : 0, p.unidade)}</b>${ehDono() ? `<div class="sub">${dinheiro(l ? l.valorEstoque : 0)}</div>` : ""}</div></div>`;
+  }).join("") : '<div class="empty">Nenhum produto cadastrado ainda.</div>';
+
+  $("prodArquivados").innerHTML = arq.length
+    ? `<details><summary>Arquivados (${arq.length})</summary>` + arq.map(p => `<div class="item off"><span>${esc(p.nome)}</span>${ehDono() ? `<button class="btn sec small" data-rest="${p.id}">Restaurar</button>` : ""}</div>`).join("") + "</details>"
+    : "";
+
+  $("prodLista").querySelectorAll("[data-min]").forEach(b => b.onclick = () => alterarMinimo(b.dataset.min));
+  $("prodLista").querySelectorAll("[data-arq]").forEach(b => b.onclick = () => mudarArquivo(b.dataset.arq, true));
+  $("prodArquivados").querySelectorAll("[data-rest]").forEach(b => b.onclick = () => mudarArquivo(b.dataset.rest, false));
+
+  // formulário de novo produto: só o dono vê
+  $("formProd").classList.toggle("hidden", !ehDono());
+  $("pUnidade").innerHTML = Object.keys(Calc.UNIDADES).map(u => `<option>${u}</option>`).join("");
+}
+
+async function criarProduto() {
+  const nome = $("pNome").value.trim();
+  if (!nome) return toast("Digite o nome do produto.");
+  if (S.produtos.some(p => p.nome.toLowerCase() === nome.toLowerCase())) return toast("Já existe um produto com esse nome.");
+  const ini = lerNum("pInic") || 0, min = lerNum("pMin") || 0, custo = lerNum("pCusto") || 0, lim = lerNum("pLim");
+  if (ini < 0 || min < 0 || custo < 0) return toast("Não use valores negativos.");
+  if (!(lim >= 0 && lim <= 100)) return toast("O limite de desperdício deve ficar entre 0 e 100%.");
+  const unidade = $("pUnidade").value;
+  const pref = colProd().doc();
+  const agora = Date.now();
+  const batch = fdb.batch();
+  batch.set(pref, {
+    nome, categoria: $("pCat").value.trim(), unidade, minimo: min, limiteDesperdicio: lim,
+    saldo: ini, custoMedio: custo, arquivado: false,
+    criadoEm: agora, atualizadoEm: agora, criadoPor: S.membroNome
+  });
+  if (ini > 0) {
+    batch.set(colMov().doc(), {
+      produtoId: pref.id, tipo: "inicial", sub: "Estoque inicial", qtd: ini, unidade,
+      data: hoje(), custoUnit: custo, valor: Math.round(ini * custo * 100) / 100,
+      fornecedor: "", obs: "Estoque inicial ao cadastrar", usuario: S.membroNome, usuarioUid: S.uid,
+      criadoEm: agora + 1, cancelado: false
+    });
+  }
+  try {
+    await batch.commit();
+    ["pNome", "pCat", "pInic", "pMin", "pCusto"].forEach(i => $(i).value = "");
+    $("pLim").value = "10";
+    toast("Produto cadastrado.");
+  } catch (e) { toast(msgErro(e)); }
+}
+$("btnCriarProd").onclick = criarProduto;
+
+async function alterarMinimo(id) {
+  const p = S.produtos.find(x => x.id === id);
+  const v = prompt(`Estoque mínimo de ${p.nome} (${p.unidade}):`, String(p.minimo));
+  if (v === null) return;
+  const n = Number(v.replace(",", "."));
+  if (!(n >= 0) || !Number.isFinite(n)) return toast("Digite um número válido.");
+  try { await colProd().doc(id).update({ minimo: n, atualizadoEm: Date.now() }); toast("Mínimo atualizado."); }
+  catch (e) { toast(msgErro(e)); }
+}
+async function mudarArquivo(id, arquivar) {
+  const p = S.produtos.find(x => x.id === id);
+  if (arquivar && !confirm(`Arquivar ${p.nome}? O histórico é mantido e você pode restaurar depois.`)) return;
+  try { await colProd().doc(id).update({ arquivado: arquivar, atualizadoEm: Date.now() }); toast(arquivar ? "Produto arquivado." : "Produto restaurado."); }
+  catch (e) { toast(msgErro(e)); }
+}
+
+/* ---------- Relatórios (dono) ---------- */
+function renderRel() {
+  if (!ehDono()) return;
+  const h = hoje();
+  $("relPeriodo").innerHTML = [[1, "Hoje"], [7, "7 dias"], [30, "30 dias"]].map(([d, t]) => `<button data-d="${d}" class="${relDias === d ? "on" : ""}">${t}</button>`).join("");
+  $("relPeriodo").querySelectorAll("button").forEach(b => b.onclick = () => { relDias = Number(b.dataset.d); renderRel(); });
+  const de = Calc.addDias(h, -(relDias - 1));
+  const P = Calc.periodo(S.produtos, S.movs, de, h);
+  const R = Calc.resumo(S.produtos, S.movs, h);
+  const desp = P.porProduto.filter(x => x.qtdDesperdicio > 0).length;
+
+  $("relCards").innerHTML = [
+    ["Quanto comprou", dinheiro(P.comprado), "ok", "Entradas com valor no período"],
+    ["Quanto consumiu", dinheiro(P.consumido), "", "Produção e vendas, em R$"],
+    ["Prejuízo estimado com desperdício", dinheiro(P.desperdicio), "bad", "Custo dos produtos jogados fora"],
+    ["Estoque atual", dinheiro(R.totais.valorEstoque), "", "Saldo x custo médio de hoje"]
+  ].map(([a, b, c, d]) => `<div class="kpi ${c}"><span>${a}</span><b style="font-size:20px">${b}</b><span class="muted" style="font-size:12px">${d}</span></div>`).join("");
+
+  const dias = [];
+  for (let i = relDias - 1; i >= 0; i--) dias.push(Calc.addDias(h, -i));
+  const cont = dias.map(d => S.movs.filter(m => !m.cancelado && m.data === d && m.tipo === "saida").length);
+  const max = Math.max(1, ...cont);
+  $("relGrafico").innerHTML = dias.map((d, i) => `<div style="height:${cont[i] / max * 100}%"><em>${cont[i] || ""}</em><span>${d.slice(8)}</span></div>`).join("");
+
+  $("relProd").innerHTML = P.porProduto.length
+    ? P.porProduto.map(x => `<div class="item"><div style="flex:1"><b>${esc(x.produto.nome)}</b>
+        <div class="sub">Consumido: ${numero(x.qtdConsumida, x.produto.unidade)} (${dinheiro(x.valorConsumido)})</div>
+        <div class="sub">Desperdício: ${numero(x.qtdDesperdicio, x.produto.unidade)}${x.pctDesperdicio !== null ? " · " + x.pctDesperdicio.toLocaleString("pt-BR") + "% das saídas" : ""}</div></div>
+        <div style="text-align:right"><b class="${x.valorDesperdicio > 0 ? "" : ""}">${dinheiro(x.valorDesperdicio)}</b><div class="sub">perdido</div></div></div>`).join("")
+    + `<p class="muted" style="margin-top:10px">Ordenado pelo maior prejuízo. Quantidade e R$ aparecem separados: a quantidade mostra o que foi jogado fora; o R$ é uma estimativa do custo.</p>`
+    : '<div class="empty">Nenhuma movimentação neste período.</div>';
+
+  const repor = R.linhas.filter(l => l.status !== "ok").sort((a, b) => (b.produto.minimo - b.saldo) - (a.produto.minimo - a.saldo));
+  $("relRepo").innerHTML = repor.length
+    ? repor.map(l => `<div class="item"><span>${esc(l.produto.nome)}</span><span class="tag ${l.status === "zerado" ? "bad" : "warn"}">Saldo ${numero(l.saldo, l.produto.unidade)} · mínimo ${numero(l.produto.minimo, l.produto.unidade)}</span></div>`).join("")
+    : '<div class="empty">Nada precisa ser reposto agora. ✅</div>';
+}
+
+/* ---------- Histórico ---------- */
+function renderHist() {
+  const lista = S.movs.slice(0, 300);
+  $("histLista").innerHTML = lista.length ? lista.map(m => {
+    const p = S.produtos.find(x => x.id === m.produtoId);
+    const nome = p ? p.nome : "(produto removido)";
+    const un = p ? p.unidade : "";
+    const cls = m.cancelado ? "" : (m.tipo === "entrada" || m.tipo === "inicial") ? "ok" : (m.sub === Calc.DESPERDICIO ? "bad" : "warn");
+    const rotulo = m.cancelado ? "Cancelado" : (m.tipo === "entrada" ? "Entrada" : m.tipo === "inicial" ? "Estoque inicial" : m.sub);
+    const detalhe = [dataBR(m.data), esc(m.usuario), m.fornecedor ? esc(m.fornecedor) : "", m.obs ? esc(m.obs) : ""].filter(Boolean).join(" · ");
+    const canc = m.cancelado ? `<div class="sub">Cancelado por ${esc(m.canceladoPor)} · ${esc(m.motivoCancelamento || "")}</div>` : "";
+    const btn = ehDono() && !m.cancelado && m.tipo !== "inicial" ? `<button class="btn sec small" data-canc="${m.id}">Cancelar</button>` : "";
+    const sinal = m.tipo === "saida" ? "−" : "+";
+    return `<div class="item ${m.cancelado ? "off" : ""}"><div style="flex:1"><b>${esc(nome)}</b> <span class="tag ${cls}">${esc(rotulo)}</span>
+      <div class="sub">${detalhe}</div>${canc}${btn}</div>
+      <div style="text-align:right"><b>${sinal}${numero(m.qtd, un)}</b>${ehDono() && m.valor ? `<div class="sub">${dinheiro(m.valor)}</div>` : ""}</div></div>`;
+  }).join("") : '<div class="empty">Nenhuma movimentação ainda.</div>';
+  $("histLista").querySelectorAll("[data-canc]").forEach(b => b.onclick = () => cancelarMov(b.dataset.canc));
+}
+
+async function cancelarMov(id) {
+  const motivo = prompt("Motivo do cancelamento (ex.: lançado errado):");
+  if (motivo === null) return;
+  if (!motivo.trim()) return toast("Escreva o motivo do cancelamento.");
+  const m = S.movs.find(x => x.id === id);
+  try {
+    await fdb.runTransaction(async tx => {
+      const mref = colMov().doc(id);
+      const ms = await tx.get(mref);
+      if (!ms.exists || ms.data().cancelado) throw new Error("Esta movimentação já foi cancelada.");
+      const pref = colProd().doc(m.produtoId);
+      const ps = await tx.get(pref);
+      const p = ps.data();
+      const novo = Math.round((p.saldo + (m.tipo === "saida" ? m.qtd : -m.qtd)) * 1000) / 1000;
+      if (novo < -1e-9) throw new Error("Não dá para cancelar: parte desses produtos já foi usada. Registre uma saída ou um ajuste.");
+      tx.update(mref, { cancelado: true, canceladoPor: S.membroNome, canceladoEm: Date.now(), motivoCancelamento: motivo.trim() });
+      tx.update(pref, { saldo: novo, atualizadoEm: Date.now() });
+    });
+    await recalcularProduto(m.produtoId);   // corrige o custo médio que depende da entrada cancelada
+    toast("Movimentação cancelada.");
+  } catch (e) { toast(msgErro(e)); }
+}
+
+/* ---------- Equipe e dados (dono) ---------- */
+function renderEquipe() {
+  if (!ehDono()) return;
+  $("equipeLista").innerHTML = "<h3 style='margin-top:0'>Equipe</h3>" + S.membros.map(u => `<div class="item ${u.ativo ? "" : "off"}"><div><b>${esc(u.nome)}</b>
+      <div class="sub">${u.papel === "dono" ? "Proprietário" : "Funcionário"} · ${esc(u.email || "")}${u.ativo ? "" : " · acesso removido"}</div></div>
+      ${u.papel !== "dono" ? `<button class="btn sec small" data-ativo="${u.id}" data-val="${!u.ativo}">${u.ativo ? "Remover acesso" : "Reativar"}</button>` : ""}</div>`).join("");
+  $("equipeLista").querySelectorAll("[data-ativo]").forEach(b => b.onclick = () => mudarAcesso(b.dataset.ativo, b.dataset.val === "true"));
+  $("cfgNome").value = S.nome || "";
+  $("boxV1").innerHTML = (!S.importadoV1 && S.produtos.length === 0 && localStorage.getItem(V1_KEY))
+    ? '<button class="btn" id="btnImportV1">Importar dados do aplicativo antigo</button><p class="muted">Encontrei dados do aplicativo antigo neste navegador. A importação só funciona em um estabelecimento vazio, e é feita uma vez.</p>'
+    : "";
+  const bi = $("btnImportV1"); if (bi) bi.onclick = importarV1;
+}
+
+async function mudarAcesso(id, ativo) {
+  if (id === S.uid) return toast("Você não pode remover o próprio acesso.");
+  const u = S.membros.find(x => x.id === id);
+  if (!ativo && !confirm(`Remover o acesso de ${u.nome}? Os registros dele são mantidos.`)) return;
+  try { await colMem().doc(id).update({ ativo }); toast(ativo ? "Acesso reativado." : "Acesso removido."); }
+  catch (e) { toast(msgErro(e)); }
+}
+
+async function adicionarFuncionario() {
+  const nome = $("fNome").value.trim(), email = $("fEmail").value.trim(), senha = $("fSenha").value;
+  if (!nome || !email) return toast("Digite o nome e o e-mail do funcionário.");
+  if (senha.length < 6) return toast("A senha provisória precisa ter pelo menos 6 caracteres.");
+  if (S.membros.some(m => (m.email || "").toLowerCase() === email.toLowerCase())) return toast("Este e-mail já está na equipe.");
+  // Cria a conta numa instância separada do Firebase, para não trocar a sessão do proprietário.
+  const sec = firebase.initializeApp(FIREBASE_CONFIG, "criar-" + Date.now());
+  try {
+    const cred = await sec.auth().createUserWithEmailAndPassword(email, senha);
+    const uid = cred.user.uid;
+    await sec.auth().signOut();
+    const b = fdb.batch();
+    b.set(colMem().doc(uid), { nome, email, papel: "funcionario", ativo: true, criadoEm: Date.now() });
+    b.set(fdb.collection("usuarios").doc(uid), { estId: S.estId, email, nome });
+    await b.commit();
+    ["fNome", "fEmail", "fSenha"].forEach(i => $(i).value = "");
+    toast("Funcionário adicionado. Passe o e-mail e a senha para ele.");
+  } catch (e) {
+    toast(msgErro(e));
+  } finally {
+    await sec.delete();
+  }
+}
+$("btnAddFunc").onclick = adicionarFuncionario;
+
+$("btnSalvarNome").onclick = async () => {
+  const n = $("cfgNome").value.trim();
+  if (!n) return toast("Digite um nome.");
+  try { await docEst().update({ nome: n }); toast("Nome salvo."); }
+  catch (e) { toast(msgErro(e)); }
+};
+
+function baixarBackup() {
+  const dados = { versao: 2, exportadoEm: new Date().toISOString(), estabelecimento: S.nome, produtos: S.produtos, movimentos: S.movs };
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "estoque-backup-" + hoje() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast("Cópia gerada. Guarde o arquivo em um lugar seguro.");
+}
+$("btnBackup").onclick = baixarBackup;
+
+async function gravarLotes(ops) {
+  for (let i = 0; i < ops.length; i += 400) {
+    const b = fdb.batch();
+    ops.slice(i, i + 400).forEach(o => o.op === "set" ? b.set(o.ref, o.data) : b.update(o.ref, o.data));
+    await b.commit();
+  }
+}
+
+async function recalcularProduto(id) {
+  const snap = await colMov().get();
+  const movs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const p = S.produtos.find(x => x.id === id) || { id };
+  const r = Calc.replay(p, movs);
+  await colProd().doc(id).update({ saldo: r.saldo, custoMedio: r.custoMedio, atualizadoEm: Date.now() });
+  return r;
+}
+
+async function recalcularTudo() {
+  if (!confirm("Recalcular todos os saldos e custos a partir do histórico?")) return;
+  try {
+    const snap = await colMov().get();
+    const movs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const ops = [], negativos = [];
+    for (const p of S.produtos) {
+      const r = Calc.replay(p, movs);
+      if (Math.abs(r.saldo - p.saldo) > 1e-6 || Math.abs(r.custoMedio - p.custoMedio) > 1e-6) {
+        ops.push({ op: "update", ref: colProd().doc(p.id), data: { saldo: r.saldo, custoMedio: r.custoMedio, atualizadoEm: Date.now() } });
+      }
+      if (r.negativo) negativos.push(p.nome);
+    }
+    await gravarLotes(ops);
+    toast(negativos.length ? `Corrigido. Atenção, saldo negativo em: ${negativos.join(", ")}` : `Pronto. ${ops.length} produto(s) corrigido(s).`);
+  } catch (e) { toast(msgErro(e)); }
+}
+$("btnRecalc").onclick = recalcularTudo;
+
+async function importarV1() {
+  let v1 = null;
+  try { v1 = JSON.parse(localStorage.getItem(V1_KEY) || "null"); } catch (e) {}
+  if (!v1 || !(v1.products || []).length) return toast("Não encontrei dados do aplicativo antigo neste navegador.");
+  if (!confirm("Importar produtos e movimentações do aplicativo antigo? Isso acontece uma única vez.")) return;
+  const conv = Calc.converterV1(v1, hoje());
+  const ops = [];
+  const agora = Date.now();
+  const idPorV1 = {};
+  for (const p of conv.produtos) {
+    const ref = colProd().doc();
+    idPorV1[p.v1Id] = ref.id;
+    ops.push({ op: "set", ref, data: {
+      nome: p.nome, categoria: p.categoria, unidade: p.unidade, minimo: p.minimo, limiteDesperdicio: p.limiteDesperdicio,
+      saldo: p.saldo, custoMedio: p.custoMedio, arquivado: false, criadoEm: agora, atualizadoEm: agora, criadoPor: "Importação"
+    } });
+  }
+  for (const m of conv.movimentos) {
+    const { produtoV1, ...resto } = m;
+    ops.push({ op: "set", ref: colMov().doc(), data: { ...resto, produtoId: idPorV1[produtoV1], unidade: conv.produtos.find(p => p.v1Id === produtoV1).unidade,
+      usuarioUid: S.uid, criadoEm: agora + m.criadoEm, cancelado: false } });
+  }
+  try {
+    await gravarLotes(ops);
+    await docEst().update({ importadoV1: true });
+    toast(`Importado: ${conv.produtos.length} produto(s), ${conv.movimentos.length} movimentação(ões).${conv.ignorados.length ? " " + conv.ignorados.length + " item(ns) ignorado(s)." : ""}`);
+  } catch (e) { toast(msgErro(e)); }
+}
+
+/* ---------- Início ---------- */
+if (!CFG_OK) {
+  mostra("cfg");
+} else {
+  iniciarFirebase();
+}
+</script>
+</body>
+</html>
